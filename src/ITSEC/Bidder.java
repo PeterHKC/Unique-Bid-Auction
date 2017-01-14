@@ -1,4 +1,4 @@
-package 資訊安全;
+package ITSEC;
 
 import java.util.ArrayList;
 import java.util.Arrays;

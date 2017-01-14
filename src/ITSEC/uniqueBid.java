@@ -1,4 +1,4 @@
-package 資訊安全;
+package ITSEC;
 
 import java.io.IOException;
 import java.util.Arrays;
