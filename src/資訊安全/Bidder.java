@@ -45,14 +45,15 @@ public class Bidder {
 		this.price = price;
 		this.name = name;
 	}
-	public void attack(int interval, int max, int min, int n)
+	public void flatAttack(int interval, int max, int min, int n)
 	{
 		int count = 0;
 		Bidder bidder[] = new Bidder[n];
 		setBucket(interval, max, min);
+		int badnum = (n/this.bucketNum)!=0 ? n/this.bucketNum : 1; 
 		for(int i = 0; i < this.bucketNum; i++)
 		{
-			for(int j = 0; j < n/this.bucketNum && count < n; j++)
+			for(int j = 0; j < badnum && count < n; j++)
 			{
 				bidder[j] = new Bidder(false, i*this.interval,count);
 				int price = bidder[j].getPrice();
@@ -75,7 +76,67 @@ public class Bidder {
 		}
 		
 	}
-	
+	public void onepriceAttack(int interval, int max, int min, int n)
+	{
+		int count = 0;
+		Bidder bidder[] = new Bidder[n];
+		setBucket(interval, max, min);
+		
+		for(int i = 0; i < this.bucketNum; i++)
+		{
+			for(int j = 0; j < n && count <= n; j++)
+			{
+				bidder[j] = new Bidder(false, i*this.interval,count);
+				int price = bidder[j].getPrice();
+				int index = price/this.interval;
+				int key = index > bucketNum-1 ? index*this.interval : (index+1)*this.interval;
+				if(this.bucket.get(key) == null)
+				{
+					ArrayList<Bidder>  bidders = new ArrayList<Bidder>();
+					bidders.add(bidder[j]);
+					this.bucket.put(key, bidders);
+				}
+				else
+				{
+					ArrayList<Bidder>  bidders = new ArrayList<Bidder>(this.bucket.get(key));
+					bidders.add(bidder[j]);
+					this.bucket.put(key, bidders);
+				}
+				count++;
+			}
+		}
+	}
+	public void steppedAttack(int interval, int max, int min, int n)
+	{
+		int count = 0;
+		Bidder bidder[] = new Bidder[n];
+		setBucket(interval, max, min);
+		
+		for(int i = 0; i < this.bucketNum; i++)
+		{
+			for(int j = 0; j < i && count < n; j++)
+			{
+				bidder[j] = new Bidder(false, i*this.interval,count);
+				int price = bidder[j].getPrice();
+				int index = price/this.interval;
+				int key = index > bucketNum-1 ? index*this.interval : (index+1)*this.interval;
+				if(this.bucket.get(key) == null)
+				{
+					ArrayList<Bidder>  bidders = new ArrayList<Bidder>();
+					bidders.add(bidder[j]);
+					this.bucket.put(key, bidders);
+				}
+				else
+				{
+					ArrayList<Bidder>  bidders = new ArrayList<Bidder>(this.bucket.get(key));
+					bidders.add(bidder[j]);
+					this.bucket.put(key, bidders);
+				}
+				count++;
+			}
+		}
+		
+	}
 	public void setBidders(int n, double ratioGood, int interval, int max, int min)
 	{
 		this.n = n;
@@ -127,9 +188,9 @@ public class Bidder {
 	public int getPrice(){return price;}
 	public boolean getID(){return id;}
 	public String getIDString(){return String.valueOf(id);}
-	public double showResult()
+	public double showResult(String choose)
 	{
-		HashMap<Integer, ArrayList<Bidder>> bidders = new HashMap<Integer, ArrayList<Bidder>>(getResultBucket());
+		HashMap<Integer, ArrayList<Bidder>> bidders = new HashMap<Integer, ArrayList<Bidder>>(getResultBucket(choose));
 		//System.out.print("good/all\t");
 		int good = 0;
 		int bad = 0;
@@ -147,9 +208,9 @@ public class Bidder {
 		return (double)good/(double)(bad+good);
 		
 	}
-	public void showWinner()
+	public void showWinner(String choose)
 	{
-		HashMap<Integer, ArrayList<Bidder>> bidders = new HashMap<Integer, ArrayList<Bidder>>(getResultBucket());
+		HashMap<Integer, ArrayList<Bidder>> bidders = new HashMap<Integer, ArrayList<Bidder>>(getResultBucket(choose));
 		System.out.println("winner\tprice\tstandpoint");
 		for(Integer key: bidders.keySet())
 		{
@@ -160,7 +221,7 @@ public class Bidder {
 			}
 		}
 	}
-	public HashMap<Integer, ArrayList<Bidder>> getResultBucket()
+	public HashMap<Integer, ArrayList<Bidder>> getResultBucket(String arg)
 	{
 		HashMap<Integer, ArrayList<Bidder>> bidders = new HashMap<Integer, ArrayList<Bidder>>();
 		int sorted[] = new int[this.bucket.keySet().size()];
@@ -178,7 +239,10 @@ public class Bidder {
 			i++;
 		}
 		Arrays.sort(sorted);
-		this.bidnumber = sorted[sorted.length-1];
+		if(arg == "high")
+			this.bidnumber = sorted[sorted.length-1];
+		else if(arg == "low")
+			this.bidnumber = sorted[0];
 		
 		for(Integer key: this.bucket.keySet())
 		{
@@ -199,19 +263,23 @@ public class Bidder {
 		}
 	}
 	
-	public void showBucket(String arg)
+	public void showBucket(String arg, String choose)
 	{
 		if(arg == "number")
 		{
+			int count = 0;
 			System.out.println("price\tnumber");
 			for(Integer key: this.bucket.keySet())
 			{
-				System.out.println(key+"\t" + this.bucket.get(key).size());
+				int temp = this.bucket.get(key).size();
+				count += temp;
+				System.out.println(key+"\t" + temp);
 			}
+			System.out.println("total number of bidders = "+count);
 		}
 		else if(arg == "result")
 		{
-			HashMap<Integer, ArrayList<Bidder>> bidders = new HashMap<Integer, ArrayList<Bidder>>(getResultBucket());
+			HashMap<Integer, ArrayList<Bidder>> bidders = new HashMap<Integer, ArrayList<Bidder>>(getResultBucket(choose));
 			
 			System.out.println("price\tnumber");
 			for(Integer i: bidders.keySet())
@@ -224,7 +292,8 @@ public class Bidder {
 			int totalgoodman = 0;
 			int totalbadman = 0;
 			System.out.print("price\t");
-			System.out.println(arg == "good"?"good":"bad");
+			System.out.print(arg == "good"?"good":"bad");
+			System.out.println("\ttotal");
 			for(Integer key: this.bucket.keySet())
 			{
 				int goodcount = 0;
@@ -244,7 +313,8 @@ public class Bidder {
 						totalbadman++;
 					}
 				}
-				System.out.println(arg == "good"?goodcount:badcount);
+				System.out.print(arg == "good"?goodcount:badcount);
+				System.out.println("\t"+bidders.size());
 			}
 			System.out.print("number of total "+arg+" man: ");
 			System.out.println(arg == "good"?totalgoodman:totalbadman);
